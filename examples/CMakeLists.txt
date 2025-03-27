@@ -59,6 +59,7 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/third_party/glfw/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/third_party/stb
     ${CMAKE_CURRENT_SOURCE_DIR}/../src/third_party/glad/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/../src/third_party/imgui
 )
 
 # Source Files Configuration
@@ -67,6 +68,14 @@ include_directories(
 file(GLOB SOURCE_FILES
     "${CMAKE_CURRENT_SOURCE_DIR}/desktop/*"
 )
+
+# Add ImGui source files
+file(GLOB IMGUI_SOURCE_FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/third_party/imgui/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/third_party/imgui/backends/imgui_impl_glfw.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../src/third_party/imgui/backends/imgui_impl_opengl3.cpp"
+)
+list(APPEND SOURCE_FILES ${IMGUI_SOURCE_FILES})
 
 # Platform Specific Configuration
 # Add platform-specific source files and settings

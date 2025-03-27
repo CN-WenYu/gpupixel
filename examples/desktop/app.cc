@@ -3,6 +3,11 @@
 
 #include <iostream>
 #include "gpupixel.h"
+// ImGui相关头文件
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
+
 using namespace gpupixel;
 
 
@@ -22,7 +27,6 @@ float lipstickIntensity = 0;
 float blusherIntensity = 0;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
-void processInput(GLFWwindow *window);
 
  void error_callback( int error, const char *msg ) {
     std::string s;
@@ -47,6 +51,19 @@ int main()
 
    glfwShowWindow(window);
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+    
+    // 初始化ImGui
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;     // 启用键盘控制
+    
+    // 设置ImGui风格
+    ImGui::StyleColorsDark();
+    
+    // 设置平台/渲染器后端
+    ImGui_ImplGlfw_InitForOpenGL(window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
     
     // create filter
     // ----
@@ -80,13 +97,57 @@ int main()
     // -----------
     while (!glfwWindowShouldClose(window))
     {
-        // input
-        // -----
-        processInput(window);
+        // 检测ESC键退出
+        if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
+            glfwSetWindowShouldClose(window, true);
+        
+        // 开始ImGui帧
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+        
+        // ImGui窗口
+        ImGui::Begin("美颜控制面板");
+        
+        // 美颜强度滑块
+        if (ImGui::SliderFloat("磨皮强度", &beautyIntensity, 0.0f, 10.0f)) {
+            beautyFaceFilter->setBlurAlpha(beautyIntensity/10);
+        }
+        
+        // 美白强度滑块
+        if (ImGui::SliderFloat("美白强度", &whitenIntensity, 0.0f, 10.0f)) {
+            beautyFaceFilter->setWhite(whitenIntensity/20);
+        }
+        
+        // 瘦脸强度滑块
+        if (ImGui::SliderFloat("瘦脸强度", &faceSlimIntensity, 0.0f, 10.0f)) {
+            faceReshapeFilter->setFaceSlimLevel(faceSlimIntensity/200);
+        }
+        
+        // 大眼强度滑块
+        if (ImGui::SliderFloat("大眼强度", &eyeEnlargeIntensity, 0.0f, 10.0f)) {
+            faceReshapeFilter->setEyeZoomLevel(eyeEnlargeIntensity/100);
+        }
+        
+        // 口红强度滑块
+        if (ImGui::SliderFloat("口红强度", &lipstickIntensity, 0.0f, 10.0f)) {
+            lipstickFilter->setBlendLevel(lipstickIntensity/10);
+        }
+        
+        // 腮红强度滑块
+        if (ImGui::SliderFloat("腮红强度", &blusherIntensity, 0.0f, 10.0f)) {
+            blusherFilter->setBlendLevel(blusherIntensity/10);
+        }
+        
+        ImGui::End();
         
         // 
         // -----
         sourceImage->Render();
+        
+        // 渲染ImGui
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         // glfw: swap buffers and poll IO events (keys pressed/released, mouse moved etc.)
         // -------------------------------------------------------------------------------
@@ -95,91 +156,15 @@ int main()
     }
 
     
+    // 清理ImGui
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+    
     // glfw: terminate, clearing all previously allocated GLFW resources.
     // ------------------------------------------------------------------
     glfwTerminate();
     return 0;
-}
-
-// process all input: query GLFW whether relevant keys are pressed/released this frame and react accordingly
-// ---------------------------------------------------------------------------------------------------------
-void processInput(GLFWwindow *window)
-{
-    if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, true);
-
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS) {
-        beautyIntensity++;
-        if(beautyIntensity > 10.0) beautyIntensity = 10.0;
-        beautyFaceFilter->setBlurAlpha(beautyIntensity/10);
-    } 
-
-    if (glfwGetKey(window, GLFW_KEY_Z) == GLFW_PRESS) {
-        beautyIntensity--;
-        if(beautyIntensity < 0.0) beautyIntensity = 0.0;
-        beautyFaceFilter->setBlurAlpha(beautyIntensity/10);
-    } 
-
-
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS) {
-        whitenIntensity++;
-        if(whitenIntensity > 10.0) whitenIntensity = 10.0;
-        beautyFaceFilter->setWhite(whitenIntensity/20);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_X) == GLFW_PRESS) {
-        whitenIntensity--;
-        if(whitenIntensity < 0.0) whitenIntensity = 0.0;
-        beautyFaceFilter->setWhite(whitenIntensity/20);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS) {
-        faceSlimIntensity++;
-        if(faceSlimIntensity > 10.0) faceSlimIntensity = 10.0;
-        faceReshapeFilter->setFaceSlimLevel(faceSlimIntensity/200);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_C) == GLFW_PRESS) {
-        faceSlimIntensity--;
-        if(faceSlimIntensity < 0.0) faceSlimIntensity = 0.0;
-        faceReshapeFilter->setFaceSlimLevel(faceSlimIntensity/200);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_F) == GLFW_PRESS) {
-        eyeEnlargeIntensity++;
-        if(eyeEnlargeIntensity > 10.0) eyeEnlargeIntensity = 10.0;
-        faceReshapeFilter->setEyeZoomLevel(eyeEnlargeIntensity/100);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_V) == GLFW_PRESS) {
-        eyeEnlargeIntensity--;
-        if(eyeEnlargeIntensity < 0.0) eyeEnlargeIntensity = 0.0;
-        faceReshapeFilter->setEyeZoomLevel(eyeEnlargeIntensity/100);
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_G) == GLFW_PRESS) {
-        lipstickIntensity++;
-        if(lipstickIntensity > 10.0) lipstickIntensity = 10.0;
-        lipstickFilter->setBlendLevel(lipstickIntensity/10); 
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_B) == GLFW_PRESS) {
-        lipstickIntensity--;
-        if(lipstickIntensity < 0.0) lipstickIntensity = 0.0;
-        lipstickFilter->setBlendLevel(lipstickIntensity/10); 
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_H) == GLFW_PRESS) {
-        blusherIntensity++;
-        if(blusherIntensity > 10.0) blusherIntensity = 10.0;
-        blusherFilter->setBlendLevel(blusherIntensity/10); 
-    }
-
-    if (glfwGetKey(window, GLFW_KEY_N) == GLFW_PRESS) {
-        blusherIntensity--;
-        if(blusherIntensity < 0.0) blusherIntensity = 0.0;
-        blusherFilter->setBlendLevel(blusherIntensity/10); 
-    }
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes
